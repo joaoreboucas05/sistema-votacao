@@ -27,8 +27,8 @@ console.log('File:', req.file);
   upload.single('imagem'),
   async (req, res) => {
     try {
-      const { titulo, descricao, autor } = req.body;
-      if (!titulo || !descricao || !autor || !req.file) {
+      const { titulo, autor } = req.body;
+      if (!titulo || !autor || !req.file) {
         return res.status(400).json({ error: 'Todos os campos e a imagem são obrigatórios' });
       }
 
@@ -36,7 +36,6 @@ console.log('File:', req.file);
 
       const newWork = new Work({
         titulo,
-        descricao,
         autor,
         imagemUrl,
         votos: 0
