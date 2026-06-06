@@ -82,7 +82,7 @@ function renderGallery(works) {
     const isVotedByUser = userHasVoted && votedWorkId === work._id;
     const disableButton = userHasVoted;
     card.innerHTML = `
-      <img class="card-img" src="${work.imagemUrl}" alt="${work.titulo}" loading="lazy">
+     <img class="card-img" src="${work.imagemUrl}" alt="${work.titulo}" loading="lazy" style="cursor: pointer;" onclick="openImageModal('${work.imagemUrl}')">
       <div class="card-content">
         <h3 class="card-title">${escapeHtml(work.titulo)}</h3>
         <div class="card-author">✍️ ${escapeHtml(work.autor)}</div>
@@ -269,3 +269,45 @@ async function init() {
   await fetchWorks();
 }
 init();
+ 
+
+// ... (código anterior do seu script.js)
+
+// Importe a biblioteca (adicione esta linha no início do arquivo)
+import Compressor from 'compressorjs';
+
+// Dentro da função que lida com o clique do botão "Adicionar Obra",
+// substitua a parte que pega o arquivo pela lógica de compressão.
+// Exemplo:
+
+addBtn.addEventListener('click', () => {
+    modal.style.display = 'block';
+});
+
+// Função que trata o arquivo selecionado no input
+function handleFileSelect(file) {
+    if (!file) return;
+
+    new Compressor(file, {
+        quality: 0.8, // Ajuste a qualidade (0.6 - 0.8 é um bom valor)
+        maxWidth: 1920, // Limita a largura máxima em pixels
+        maxHeight: 1920, // Limita a altura máxima em pixels
+        success(result) {
+            // O arquivo 'result' é o seu arquivo comprimido (geralmente bem menor que 10MB)
+            console.log('Tamanho comprimido:', result.size);
+            // Agora você pode enviar o 'result' para o seu servidor
+            uploadToServer(result);
+        },
+        error(err) {
+            console.error(err.message);
+            alert('Erro ao comprimir a imagem. Tente novamente com uma imagem menor.');
+        },
+    });
+}
+
+// No evento 'change' do seu input de arquivo, chame a função handleFileSelect
+// Exemplo:
+imgInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    handleFileSelect(file);
+});
