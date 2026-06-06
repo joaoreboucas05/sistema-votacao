@@ -1,25 +1,26 @@
 const multer = require('multer');
-const path = require('path');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../public/uploads'));
-  },
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, unique + ext);
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: 'dcd2dd9vi',
+  api_key: '824553379534172',
+  api_secret: 'tXbPfwJcd28o155pV__4whqg1DI'
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'votacao_obras',
+    allowed_formats: ['png', 'jpg', 'jpeg', 'gif', 'webp'],
+    transformation: [{ width: 800, height: 600, crop: 'limit' }]
   }
 });
 
-const fileFilter = (req, file, cb) => {
-  const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
-  if (allowed.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Formato não suportado. Use PNG, JPEG, GIF ou WEBP.'));
-  }
-};
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 20 * 1024 * 1024 }
+});
 
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 }, fileFilter });
 module.exports = upload;

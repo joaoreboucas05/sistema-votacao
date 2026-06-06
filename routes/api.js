@@ -32,7 +32,7 @@ router.post('/works',
       if (!titulo || !autor || !req.file) {
         return res.status(400).json({ error: 'Os campos título, autor e imagem são obrigatórios' });
       }
-      const imagemUrl = `/uploads/${req.file.filename}`;
+      const imagemUrl = req.file.path; 
       // Salvar sem descrição (ou com descrição vazia se o modelo exigir)
       const newWork = new Work({ titulo, autor, imagemUrl, votos: 0 });
       // Se o modelo Work exigir descricao, adicione um valor padrão: descricao: ''
