@@ -86,7 +86,6 @@ function renderGallery(works) {
       <div class="card-content">
         <h3 class="card-title">${escapeHtml(work.titulo)}</h3>
         <div class="card-author">✍️ ${escapeHtml(work.autor)}</div>
-        <p class="card-desc">${escapeHtml(work.descricao)}</p>
         <div class="card-footer">
           <div class="votes-count">👍 <span>${work.votos}</span> voto${work.votos !== 1 ? 's' : ''}</div>
           <button class="vote-btn" data-id="${work._id}" ${disableButton ? 'disabled' : ''}>
@@ -174,18 +173,16 @@ form?.addEventListener('submit', async (e) => {
 
   // Coleta manual dos campos
   const titulo = document.querySelector('input[name="titulo"]')?.value;
-  const descricao = document.querySelector('textarea[name="descricao"]')?.value;
   const autor = document.querySelector('input[name="autor"]')?.value;
   const imagemFile = imgInput?.files[0];
 
-  if (!titulo || !descricao || !autor || !imagemFile) {
+  if (!titulo || !autor || !imagemFile) {
     alert('Todos os campos e a imagem são obrigatórios.');
     return;
   }
 
   const formData = new FormData();
   formData.append('titulo', titulo);
-  formData.append('descricao', descricao);
   formData.append('autor', autor);
   formData.append('imagem', imagemFile);
 
