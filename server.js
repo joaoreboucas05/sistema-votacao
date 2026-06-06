@@ -47,10 +47,9 @@ app.use('/api', apiRoutes);
 app.use('/auth', authRoutes);
 
 // Frontend (curinga para SPA)
-app.get('*', (req, res) => {
+app.get('/*splat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
 app.listen(PORT, () => {
   console.log(`🚀 Servidor em ${process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`}`);
 });
