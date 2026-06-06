@@ -5,16 +5,13 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 const router = express.Router();
 
-// Configure sua estratégia do Google
 passport.use(new GoogleStrategy({
-    // Modifique as linhas clientID e clientSecret para:
-clientID: process.env.GOOGLE_CLIENT_ID,
-clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback'
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: 'https://sistema-votacao-305z.onrender.com/auth/google/callback',
+    proxy: true
   },
   (accessToken, refreshToken, profile, done) => {
-    // Aqui você pode salvar o usuário no banco se quiser
-    // Por enquanto apenas passamos o perfil adiante
     return done(null, profile);
   }
 ));
@@ -22,20 +19,17 @@ clientSecret: process.env.GOOGLE_CLIENT_SECRET,
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// Rota para iniciar login
 router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-// Callback após login
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
-    res.redirect('/'); // volta para home logado
+    res.redirect('/');
   }
 );
 
-// Rota para obter usuário atual (frontend)
 router.get('/me', (req, res) => {
   if (req.isAuthenticated()) {
     res.json({ user: req.user });
@@ -44,7 +38,6 @@ router.get('/me', (req, res) => {
   }
 });
 
-// Logout
 router.get('/logout', (req, res) => {
   req.logout(() => {
     res.redirect('/');
