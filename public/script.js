@@ -149,7 +149,6 @@ window.addEventListener('click', (e) => {
   if (e.target === modal) modal.style.display = 'none';
 });
 
-// Pré‑visualização da imagem
 imgInput?.addEventListener('change', function(e) {
   previewDiv.innerHTML = '';
   const file = e.target.files[0];
@@ -164,13 +163,7 @@ imgInput?.addEventListener('change', function(e) {
   }
 });
 
-// Função de upload (recebe o arquivo comprimido ou original)
-async function uploadWork(titulo, autor, file) {
-  const formData = new FormData();
-  formData.append('titulo', titulo);
-  formData.append('autor', autor);
-  formData.append('imagem', file);
-
+async function uploadWork(formData) {
   const res = await fetch('/api/works', {
     method: 'POST',
     body: formData,
@@ -190,7 +183,6 @@ async function uploadWork(titulo, autor, file) {
   return await res.json();
 }
 
-// Submissão do formulário com compressão
 form?.addEventListener('submit', async (e) => {
   e.preventDefault();
   
@@ -208,17 +200,18 @@ form?.addEventListener('submit', async (e) => {
     return;
   }
 
-  // Comprimir a imagem se for maior que 5 MB (opcional, mas evita limite do Cloudinary)
-  const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
-  let fileToUpload = imagemFile;
+  // Obtém o botão que foi clicado para iniciar o envio
+  const submitButton = e.submitter;
+  const originalButtonText = submitButton ? submitButton.innerText : 'Enviar';
+  if (submitButton) submitButton.innerText = 'Comprimindo imagem...';
 
-  if (imagemFile.size > MAX_SIZE && typeof Compressor !== 'undefined') {
-    // Mostra um aviso de que está comprimindo
-    const btn = e.submitter;
-    const originalText = btn?.innerText;
-    if (btn) btn.innerText = 'Comprimindo imagem...';
+  try {
+    // Se o tamanho do arquivo for maior que 5MB, comprime
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    let fileToUpload = imagemFile;
 
-    try {
+    if (imagemFile.size > MAX_SIZE) {
+      // Cria uma Promise para aguardar a compressão
       fileToUpload = await new Promise((resolve, reject) => {
         new Compressor(imagemFile, {
           quality: 0.7,
@@ -232,17 +225,16 @@ form?.addEventListener('submit', async (e) => {
           }
         });
       });
-      console.log(`Imagem comprimida: ${(fileToUpload.size / 1024).toFixed(2)} KB`);
-    } catch (err) {
-      console.warn('Falha na compressão, enviando original:', err);
-      fileToUpload = imagemFile;
-    } finally {
-      if (btn) btn.innerText = originalText;
     }
-  }
 
-  try {
-    const newWork = await uploadWork(titulo, autor, fileToUpload);
+    const formData = new FormData();
+    formData.append('titulo', titulo);
+    formData.append('autor', autor);
+    formData.append('imagem', fileToUpload);
+
+    if (submitButton) submitButton.innerText = 'Enviando...';
+    const newWork = await uploadWork(formData);
+    
     alert(`Obra "${newWork.titulo}" adicionada com sucesso!`);
     modal.style.display = 'none';
     form.reset();
@@ -251,6 +243,8 @@ form?.addEventListener('submit', async (e) => {
   } catch (err) {
     console.error('Erro no upload:', err);
     alert('Erro ao enviar: ' + err.message);
+  } finally {
+    if (submitButton) submitButton.innerText = originalButtonText;
   }
 });
 
@@ -273,7 +267,6 @@ function closeImageModal() {
   }
 }
 
-// Fechar ao clicar no fundo ou tecla ESC
 window.closeImageModal = closeImageModal;
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeImageModal();
