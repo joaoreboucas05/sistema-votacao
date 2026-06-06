@@ -82,7 +82,7 @@ function renderGallery(works) {
     const isVotedByUser = userHasVoted && votedWorkId === work._id;
     const disableButton = userHasVoted;
     card.innerHTML = `
-     <img class="card-img" src="${work.imagemUrl}" alt="${work.titulo}" loading="lazy" style="cursor: pointer;" onclick="openImageModal('${work.imagemUrl}')">
+      <img class="card-img" src="${work.imagemUrl}" alt="${work.titulo}" loading="lazy" style="cursor: pointer;" onclick="openImageModal('${work.imagemUrl}', '${escapeHtml(work.titulo)}')">
       <div class="card-content">
         <h3 class="card-title">${escapeHtml(work.titulo)}</h3>
         <div class="card-author">✍️ ${escapeHtml(work.autor)}</div>
@@ -129,8 +129,7 @@ async function confirmVote(workId) {
   }
 }
 
-// ==================== MODAL DE ADICIONAR OBRA ====================
-// ========== ADICIONAR OBRA - VERSÃO CORRIGIDA ==========
+// ==================== MODAL DE ADICIONAR OBRA (COM COMPRESSÃO) ====================
 const form = document.getElementById('add-work-form');
 const modal = document.getElementById('modal');
 const addBtn = document.getElementById('add-work-btn');
@@ -141,13 +140,16 @@ const previewDiv = document.getElementById('image-preview');
 addBtn?.addEventListener('click', () => {
   modal.style.display = 'block';
 });
+
 closeSpan?.addEventListener('click', () => {
   modal.style.display = 'none';
 });
+
 window.addEventListener('click', (e) => {
   if (e.target === modal) modal.style.display = 'none';
 });
 
+// Pré‑visualização da imagem
 imgInput?.addEventListener('change', function(e) {
   previewDiv.innerHTML = '';
   const file = e.target.files[0];
@@ -162,7 +164,33 @@ imgInput?.addEventListener('change', function(e) {
   }
 });
 
-// 👇🏻 SUBSTITUA A FUNÇÃO ANTERIOR POR ESTA:
+// Função de upload (recebe o arquivo comprimido ou original)
+async function uploadWork(titulo, autor, file) {
+  const formData = new FormData();
+  formData.append('titulo', titulo);
+  formData.append('autor', autor);
+  formData.append('imagem', file);
+
+  const res = await fetch('/api/works', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include'
+  });
+
+  if (res.status === 401) {
+    alert('Login necessário. Faça login com Google primeiro.');
+    return null;
+  }
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.error || 'Erro no servidor');
+  }
+
+  return await res.json();
+}
+
+// Submissão do formulário com compressão
 form?.addEventListener('submit', async (e) => {
   e.preventDefault();
   
@@ -171,88 +199,87 @@ form?.addEventListener('submit', async (e) => {
     return;
   }
 
-  // Coleta manual dos campos
   const titulo = document.querySelector('input[name="titulo"]')?.value;
   const autor = document.querySelector('input[name="autor"]')?.value;
   const imagemFile = imgInput?.files[0];
 
   if (!titulo || !autor || !imagemFile) {
-    alert('Todos os campos e a imagem são obrigatórios.');
+    alert('Os campos título, autor e imagem são obrigatórios.');
     return;
   }
 
-  const formData = new FormData();
-  formData.append('titulo', titulo);
-  formData.append('autor', autor);
-  formData.append('imagem', imagemFile);
+  // Comprimir a imagem se for maior que 5 MB (opcional, mas evita limite do Cloudinary)
+  const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+  let fileToUpload = imagemFile;
+
+  if (imagemFile.size > MAX_SIZE && typeof Compressor !== 'undefined') {
+    // Mostra um aviso de que está comprimindo
+    const btn = e.submitter;
+    const originalText = btn?.innerText;
+    if (btn) btn.innerText = 'Comprimindo imagem...';
+
+    try {
+      fileToUpload = await new Promise((resolve, reject) => {
+        new Compressor(imagemFile, {
+          quality: 0.7,
+          maxWidth: 1200,
+          maxHeight: 1200,
+          success(result) {
+            resolve(result);
+          },
+          error(err) {
+            reject(err);
+          }
+        });
+      });
+      console.log(`Imagem comprimida: ${(fileToUpload.size / 1024).toFixed(2)} KB`);
+    } catch (err) {
+      console.warn('Falha na compressão, enviando original:', err);
+      fileToUpload = imagemFile;
+    } finally {
+      if (btn) btn.innerText = originalText;
+    }
+  }
 
   try {
-    const res = await fetch('/api/works', {
-      method: 'POST',
-      body: formData,
-      credentials: 'include'
-      // Não coloque headers! O navegador define o boundary automaticamente.
-    });
-
-    if (res.status === 401) {
-      alert('Login necessário. Faça login com Google primeiro.');
-      return;
-    }
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || 'Erro no servidor');
-    }
-
-    const newWork = await res.json();
+    const newWork = await uploadWork(titulo, autor, fileToUpload);
     alert(`Obra "${newWork.titulo}" adicionada com sucesso!`);
     modal.style.display = 'none';
     form.reset();
     previewDiv.innerHTML = '';
-    fetchWorks(); // recarrega a galeria
+    fetchWorks();
   } catch (err) {
     console.error('Erro no upload:', err);
     alert('Erro ao enviar: ' + err.message);
   }
 });
 
-// ========== LIGHTBOX / MODAL DE IMAGEM ==========
+// ==================== MODAL DE AMPLIAR IMAGEM ====================
 const imageModal = document.getElementById('imageModal');
 const modalImg = document.getElementById('modalImage');
-const modalCaption = document.getElementById('imageModalCaption');
-const closeModalBtn = document.querySelector('.image-modal-close');
 
-// Função para abrir o modal com a imagem clicada
 function openImageModal(imgSrc, imgAlt) {
+  if (!imageModal || !modalImg) return;
   modalImg.src = imgSrc;
-  modalCaption.textContent = imgAlt || 'Imagem da obra';
-  imageModal.style.display = 'block';
-  document.body.style.overflow = 'hidden'; // evita rolagem do fundo
+  modalImg.alt = imgAlt || 'Imagem ampliada';
+  imageModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 }
 
-// Fechar modal ao clicar no X
-closeModalBtn.onclick = function() {
-  imageModal.style.display = 'none';
-  document.body.style.overflow = 'auto';
-}
-
-// Fechar modal ao clicar fora da imagem (no fundo escuro)
-imageModal.onclick = function(event) {
-  if (event.target === imageModal) {
+function closeImageModal() {
+  if (imageModal) {
     imageModal.style.display = 'none';
     document.body.style.overflow = 'auto';
   }
 }
 
-// Tecla ESC fecha o modal
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && imageModal.style.display === 'block') {
-    imageModal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-  }
+// Fechar ao clicar no fundo ou tecla ESC
+window.closeImageModal = closeImageModal;
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeImageModal();
 });
 
-// ==================== INIT ====================
+// ==================== ESCAPE HTML ====================
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/[&<>]/g, function(m) {
@@ -263,51 +290,11 @@ function escapeHtml(str) {
   });
 }
 
+// ==================== INICIALIZAÇÃO ====================
 async function init() {
   await checkAuth();
   await loadUserVoteStatus();
   await fetchWorks();
 }
+
 init();
- 
-
-// ... (código anterior do seu script.js)
-
-// Importe a biblioteca (adicione esta linha no início do arquivo)
-import Compressor from 'compressorjs';
-
-// Dentro da função que lida com o clique do botão "Adicionar Obra",
-// substitua a parte que pega o arquivo pela lógica de compressão.
-// Exemplo:
-
-addBtn.addEventListener('click', () => {
-    modal.style.display = 'block';
-});
-
-// Função que trata o arquivo selecionado no input
-function handleFileSelect(file) {
-    if (!file) return;
-
-    new Compressor(file, {
-        quality: 0.8, // Ajuste a qualidade (0.6 - 0.8 é um bom valor)
-        maxWidth: 1920, // Limita a largura máxima em pixels
-        maxHeight: 1920, // Limita a altura máxima em pixels
-        success(result) {
-            // O arquivo 'result' é o seu arquivo comprimido (geralmente bem menor que 10MB)
-            console.log('Tamanho comprimido:', result.size);
-            // Agora você pode enviar o 'result' para o seu servidor
-            uploadToServer(result);
-        },
-        error(err) {
-            console.error(err.message);
-            alert('Erro ao comprimir a imagem. Tente novamente com uma imagem menor.');
-        },
-    });
-}
-
-// No evento 'change' do seu input de arquivo, chame a função handleFileSelect
-// Exemplo:
-imgInput.addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    handleFileSelect(file);
-});
