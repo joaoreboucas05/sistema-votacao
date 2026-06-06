@@ -216,6 +216,42 @@ form?.addEventListener('submit', async (e) => {
   }
 });
 
+// ========== LIGHTBOX / MODAL DE IMAGEM ==========
+const imageModal = document.getElementById('imageModal');
+const modalImg = document.getElementById('modalImage');
+const modalCaption = document.getElementById('imageModalCaption');
+const closeModalBtn = document.querySelector('.image-modal-close');
+
+// Função para abrir o modal com a imagem clicada
+function openImageModal(imgSrc, imgAlt) {
+  modalImg.src = imgSrc;
+  modalCaption.textContent = imgAlt || 'Imagem da obra';
+  imageModal.style.display = 'block';
+  document.body.style.overflow = 'hidden'; // evita rolagem do fundo
+}
+
+// Fechar modal ao clicar no X
+closeModalBtn.onclick = function() {
+  imageModal.style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
+// Fechar modal ao clicar fora da imagem (no fundo escuro)
+imageModal.onclick = function(event) {
+  if (event.target === imageModal) {
+    imageModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// Tecla ESC fecha o modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && imageModal.style.display === 'block') {
+    imageModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
+});
+
 // ==================== INIT ====================
 function escapeHtml(str) {
   if (!str) return '';
