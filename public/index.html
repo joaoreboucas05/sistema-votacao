@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galeria de Votação - Arte Contemporânea</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>🎨 VOTE NA SUA OBRA FAVORITA</h1>
+        <div>
+          <span id="user-info" style="margin-right: 15px;"></span>
+          <a id="login-btn" href="/auth/google" class="btn-outline">Login com Google</a>
+          <button id="logout-btn" style="display:none;" class="btn-outline">Sair</button>
+          <button id="add-work-btn" class="btn-primary" style="display:none; margin-left: 10px;">➕ Adicionar Obra</button>
+        </div>
+      </div>
+      <p>Você tem apenas um voto. Escolha com sabedoria!</p>
+      <div id="status-message" class="status-message"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="gallery" class="gallery-grid">
+      <div class="loading">Carregando obras...</div>
+    </div>
+  </main>
+
+  <!-- MODAL -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Adicionar nova obra</h2>
+      <form id="add-work-form" enctype="multipart/form-data">
+        <label>Título *</label>
+        <input type="text" name="titulo" required>
+        
+        <label>Descrição *</label>
+        <textarea name="descricao" rows="3" required></textarea>
+        
+        <label>Autor *</label>
+        <input type="text" name="autor" required>
+        
+        <label>Imagem *</label>
+        <input type="file" id="imagem-input" accept="image/*" required>
+        <div id="image-preview" class="image-preview"></div>
+        
+        <button type="submit" class="btn-primary">Enviar Obra</button>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>Votação única por visitante • Galeria online</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
