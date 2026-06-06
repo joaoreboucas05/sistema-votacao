@@ -16,37 +16,36 @@ router.get('/works', async (req, res) => {
 });
 
 // POST nova obra – somente para usuários autenticados
+const upload = require('../middleware/upload');
+
 router.post('/works', 
   (req, res, next) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: 'Login necessário' });
     next();
-
-    console.log('Body:', req.body);
-console.log('File:', req.file);
   },
-  upload.single('imagem'),
+  (req, res, next) => {
+    upload.single('imagem')(req, res, (err) => {
+      if (err) {
+        // Erro do multer (formato inválido, tamanho, etc.)
+        return res.status(400).json({ error: err.message });
+      }
+      next();
+    });
+  },
   async (req, res) => {
     try {
-      const { titulo, autor } = req.body;
+      const { titulo, descricao, autor } = req.body;
       if (!titulo || !autor || !req.file) {
         return res.status(400).json({ error: 'Todos os campos e a imagem são obrigatórios' });
       }
 
       const imagemUrl = `/uploads/${req.file.filename}`;
-
-      const newWork = new Work({
-        titulo,
-        autor,
-        imagemUrl,
-        votos: 0
-      });
-
+      const newWork = new Work({ titulo, autor, imagemUrl, votos: 0 });
       await newWork.save();
       res.status(201).json(newWork);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
-    
   }
 );
 
